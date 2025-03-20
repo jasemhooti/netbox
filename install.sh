@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# 1. بررسی نصب Python3 و pip
+# بررسی نصب Python3 و pip
 echo "بررسی نصب Python3 و pip ..."
 if ! command -v python3 &>/dev/null; then
     echo "Python3 نصب نیست. در حال نصب Python3 ..."
@@ -44,7 +44,7 @@ fi
 echo "BOT_TOKEN=$BOT_TOKEN" > .env
 echo "ADMIN_ID=$ADMIN_ID" >> .env
 
-# 4. ایجاد اسکریپت اصلی ربات
+# 4. ایجاد فایل پایتون اصلی ربات
 echo "در حال ایجاد فایل اصلی ربات..."
 
 cat > main.py << EOF
