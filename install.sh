@@ -1,66 +1,53 @@
-import os
-import subprocess
-import sys
+#!/bin/bash
 
-def check_python_and_pip():
-    """ بررسی نصب Python و pip """
-    print("بررسی نصب Python و pip...")
+# 1. بررسی نصب Python3 و pip
+echo "بررسی نصب Python3 و pip ..."
+if ! command -v python3 &>/dev/null; then
+    echo "Python3 نصب نیست. در حال نصب Python3 ..."
+    sudo apt update
+    sudo apt install python3 python3-pip -y
+else
+    echo "Python3 نصب است."
+fi
 
-    # بررسی نسخه Python
-    try:
-        python_version = subprocess.check_output(['python3', '--version'])
-        print(f"Python version: {python_version.decode('utf-8')}")
-    except FileNotFoundError:
-        print("Python3 نصب نیست. لطفاً Python3 را نصب کنید.")
-        sys.exit(1)
+if ! command -v pip3 &>/dev/null; then
+    echo "pip3 نصب نیست. در حال نصب pip3 ..."
+    sudo apt install python3-pip -y
+else
+    echo "pip3 نصب است."
+fi
 
-    # بررسی pip
-    try:
-        subprocess.check_output(['pip3', '--version'])
-        print("pip3 نصب است.")
-    except FileNotFoundError:
-        print("pip3 نصب نیست. نصب pip3 در حال انجام است...")
-        subprocess.check_call([sys.executable, "-m", "ensurepip", "--upgrade"])
+# 2. نصب پیش‌نیازها از requirements.txt
+echo "در حال نصب پیش‌نیازها ..."
+if [ ! -f "requirements.txt" ]; then
+    echo "فایل requirements.txt یافت نشد، ایجاد آن..."
+    cat > requirements.txt << EOF
+aiogram==2.21.0
+fastapi==0.75.0
+psycopg2==2.9.3
+python-dotenv==0.19.2
+EOF
+fi
 
-def install_requirements():
-    """ نصب پیش‌نیازهای پروژه از requirements.txt """
-    print("در حال نصب پیش‌نیازها از فایل requirements.txt...")
-    if not os.path.isfile('requirements.txt'):
-        print("فایل requirements.txt یافت نشد، ایجاد آن...")
-        requirements = """
-        aiogram==2.21.0
-        fastapi==0.75.0
-        psycopg2==2.9.3
-        python-dotenv==0.19.2
-        """
-        with open('requirements.txt', 'w') as f:
-            f.write(requirements)
+pip3 install -r requirements.txt
 
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", 'requirements.txt'])
-    print("پیش‌نیازها با موفقیت نصب شدند.")
+# 3. ایجاد فایل .env برای توکن و آیدی ادمین
+echo "مرحله 1: تنظیمات اولیه ربات تلگرام"
+read -p "لطفاً توکن ربات تلگرام خود را وارد کنید: " BOT_TOKEN
+read -p "لطفاً آیدی عددی ادمین خود را وارد کنید: " ADMIN_ID
 
-def create_env_file():
-    """ ایجاد فایل .env برای توکن ربات و آیدی ادمین """
-    print("مرحله 1: تنظیمات اولیه ربات تلگرام")
+if [ -z "$BOT_TOKEN" ] || [ -z "$ADMIN_ID" ]; then
+    echo "توکن یا آیدی ادمین نمی‌تواند خالی باشد. لطفاً دوباره امتحان کنید."
+    exit 1
+fi
 
-    bot_token = input("لطفاً توکن ربات تلگرام خود را وارد کنید: ")
-    admin_id = input("لطفاً آیدی عددی ادمین خود را وارد کنید: ")
+echo "BOT_TOKEN=$BOT_TOKEN" > .env
+echo "ADMIN_ID=$ADMIN_ID" >> .env
 
-    if not bot_token or not admin_id:
-        print("توکن یا آیدی ادمین نمی‌تواند خالی باشد. لطفاً دوباره امتحان کنید.")
-        return
+# 4. ایجاد اسکریپت اصلی ربات
+echo "در حال ایجاد فایل اصلی ربات..."
 
-    with open(".env", "w") as f:
-        f.write(f"BOT_TOKEN={bot_token}\n")
-        f.write(f"ADMIN_ID={admin_id}\n")
-
-    print("اطلاعات ذخیره شد. فایل .env با موفقیت ایجاد شد.")
-
-def create_bot_script():
-    """ ایجاد اسکریپت اصلی ربات """
-    print("در حال ایجاد فایل اصلی ربات...")
-
-    bot_script = """
+cat > main.py << EOF
 from aiogram import Bot, Dispatcher, types
 from aiogram.utils import executor
 import os
@@ -82,29 +69,8 @@ async def start(message: types.Message):
 
 if __name__ == "__main__":
     executor.start_polling(dp, skip_updates=True)
-"""
-    with open('main.py', 'w') as f:
-        f.write(bot_script)
+EOF
 
-    print("فایل اصلی ربات (main.py) با موفقیت ایجاد شد.")
-
-def main():
-    """ اجرای تمام مراحل نصب """
-    print("شروع نصب و راه‌اندازی ربات تلگرام...")
-
-    # بررسی نصب Python و pip
-    check_python_and_pip()
-
-    # نصب پیش‌نیازها از requirements.txt
-    install_requirements()
-
-    # ایجاد فایل .env
-    create_env_file()
-
-    # ایجاد اسکریپت اصلی ربات
-    create_bot_script()
-
-    print("تمام مراحل نصب با موفقیت انجام شد. شما می‌توانید ربات را با دستور python3 main.py اجرا کنید.")
-
-if __name__ == "__main__":
-    main()
+# 5. دستورالعمل‌های بعد از نصب
+echo "تمام مراحل نصب با موفقیت انجام شد. شما می‌توانید ربات را با دستور زیر اجرا کنید:"
+echo "python3 main.py"
