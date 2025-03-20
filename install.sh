@@ -1,28 +1,32 @@
 import os
+import subprocess
+import sys
 
-def create_env_file():
-    print("مرحله 1: تنظیمات اولیه ربات تلگرام")
+def check_python_and_pip():
+    """ بررسی نصب Python و pip """
+    print("بررسی نصب Python و pip...")
 
-    # گرفتن توکن و آیدی ادمین از کاربر
-    bot_token = input("لطفاً توکن ربات تلگرام خود را وارد کنید: ")
-    admin_id = input("لطفاً آیدی عددی ادمین خود را وارد کنید: ")
+    # بررسی نسخه Python
+    try:
+        python_version = subprocess.check_output(['python3', '--version'])
+        print(f"Python version: {python_version.decode('utf-8')}")
+    except FileNotFoundError:
+        print("Python3 نصب نیست. لطفاً Python3 را نصب کنید.")
+        sys.exit(1)
 
-    # بررسی اینکه کاربر توکن و آیدی را وارد کرده باشد
-    if not bot_token or not admin_id:
-        print("توکن یا آیدی ادمین نمی‌تواند خالی باشد. لطفاً دوباره امتحان کنید.")
-        return
+    # بررسی pip
+    try:
+        subprocess.check_output(['pip3', '--version'])
+        print("pip3 نصب است.")
+    except FileNotFoundError:
+        print("pip3 نصب نیست. نصب pip3 در حال انجام است...")
+        subprocess.check_call([sys.executable, "-m", "ensurepip", "--upgrade"])
 
-    # ذخیره این اطلاعات در فایل .env
-    with open(".env", "w") as f:
-        f.write(f"BOT_TOKEN={bot_token}\n")
-        f.write(f"ADMIN_ID={admin_id}\n")
-
-    print("اطلاعات ذخیره شد. فایل .env با موفقیت ایجاد شد.")
-
-def check_and_install_requirements():
-    # بررسی وجود فایل requirements.txt و نصب پکیج‌ها
+def install_requirements():
+    """ نصب پیش‌نیازهای پروژه از requirements.txt """
+    print("در حال نصب پیش‌نیازها از فایل requirements.txt...")
     if not os.path.isfile('requirements.txt'):
-        print("فایل requirements.txt یافت نشد. ایجاد فایل و نصب پیش نیازها...")
+        print("فایل requirements.txt یافت نشد، ایجاد آن...")
         requirements = """
         aiogram==2.21.0
         fastapi==0.75.0
@@ -32,11 +36,28 @@ def check_and_install_requirements():
         with open('requirements.txt', 'w') as f:
             f.write(requirements)
 
-    print("در حال نصب پیش‌نیازها از فایل requirements.txt...")
-    os.system('pip3 install -r requirements.txt')
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", 'requirements.txt'])
+    print("پیش‌نیازها با موفقیت نصب شدند.")
+
+def create_env_file():
+    """ ایجاد فایل .env برای توکن ربات و آیدی ادمین """
+    print("مرحله 1: تنظیمات اولیه ربات تلگرام")
+
+    bot_token = input("لطفاً توکن ربات تلگرام خود را وارد کنید: ")
+    admin_id = input("لطفاً آیدی عددی ادمین خود را وارد کنید: ")
+
+    if not bot_token or not admin_id:
+        print("توکن یا آیدی ادمین نمی‌تواند خالی باشد. لطفاً دوباره امتحان کنید.")
+        return
+
+    with open(".env", "w") as f:
+        f.write(f"BOT_TOKEN={bot_token}\n")
+        f.write(f"ADMIN_ID={admin_id}\n")
+
+    print("اطلاعات ذخیره شد. فایل .env با موفقیت ایجاد شد.")
 
 def create_bot_script():
-    # ایجاد فایل اصلی ربات (main.py) که از توکن و آیدی استفاده می‌کند
+    """ ایجاد اسکریپت اصلی ربات """
     print("در حال ایجاد فایل اصلی ربات...")
 
     bot_script = """
@@ -68,15 +89,19 @@ if __name__ == "__main__":
     print("فایل اصلی ربات (main.py) با موفقیت ایجاد شد.")
 
 def main():
+    """ اجرای تمام مراحل نصب """
     print("شروع نصب و راه‌اندازی ربات تلگرام...")
 
-    # مرحله اول: ایجاد فایل .env
+    # بررسی نصب Python و pip
+    check_python_and_pip()
+
+    # نصب پیش‌نیازها از requirements.txt
+    install_requirements()
+
+    # ایجاد فایل .env
     create_env_file()
 
-    # مرحله دوم: نصب پکیج‌ها از requirements.txt
-    check_and_install_requirements()
-
-    # مرحله سوم: ایجاد اسکریپت اصلی ربات
+    # ایجاد اسکریپت اصلی ربات
     create_bot_script()
 
     print("تمام مراحل نصب با موفقیت انجام شد. شما می‌توانید ربات را با دستور python3 main.py اجرا کنید.")
